@@ -57,7 +57,9 @@ class VC:
             ):  # 考虑到轮询, 需要加个判断看是否 sid 是由有模型切换到无模型的
                 logger.info("Clean model cache")
                 del (self.net_g, self.n_spk, self.hubert_model, self.tgt_sr)  # ,cpt
-                self.hubert_model = self.net_g = self.n_spk = self.hubert_model = (
+                if hasattr(self, 'pipeline') and self.pipeline is not None:
+                    del self.pipeline
+                self.hubert_model = self.net_g = self.n_spk = self.pipeline = (
                     self.tgt_sr
                 ) = None
                 if torch.cuda.is_available():
@@ -214,15 +216,16 @@ class VC:
                 if os.path.exists(file_index)
                 else "Index not used."
             )
+            success_msg = "Success.\n%s\nTime:\nnpy: %.2fs, f0: %.2fs, infer: %.2fs." % (index_info, *times)
+            logger.info("VC Single Completed: " + success_msg.replace("\n", " "))
             return (
-                "Success.\n%s\nTime:\nnpy: %.2fs, f0: %.2fs, infer: %.2fs."
-                % (index_info, *times),
+                success_msg,
                 (tgt_sr, audio_opt),
             )
         except:
             info = traceback.format_exc()
             logger.warning(info)
-            return info, (None, None)
+            return info, None
 
     def vc_multi(
         self,

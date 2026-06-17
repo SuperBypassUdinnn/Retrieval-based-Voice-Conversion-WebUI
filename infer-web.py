@@ -17,6 +17,12 @@ from i18n.i18n import I18nAuto
 from configs.config import Config
 from sklearn.cluster import MiniBatchKMeans
 import torch, platform
+try:
+    import fairseq.data.dictionary
+    if hasattr(torch.serialization, 'add_safe_globals'):
+        torch.serialization.add_safe_globals([fairseq.data.dictionary.Dictionary])
+except Exception:
+    pass
 import numpy as np
 import gradio as gr
 import faiss
