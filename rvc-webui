@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# RVC - Retrieval-based Voice Conversion Launcher
+# Bisa dijalankan dari direktori mana saja, tidak harus dari root project.
+# Contoh penggunaan:
+#   ./RVC                   -> jalankan WebUI biasa
+#   ./RVC --share           -> jalankan dengan link publik Gradio
+#   ./RVC --pycmd python3   -> tentukan perintah python yang dipakai
+
+# Temukan lokasi absolut script ini, terlepas dari CWD saat dijalankan
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+PROJECT_DIR="$(dirname "$SCRIPT_PATH")"
+
+echo ">>> RVC Launcher"
+echo ">>> Project dir : $PROJECT_DIR"
+
+# Pindah ke root project agar semua path relatif dalam kode (assets/, logs/, dll) benar
+cd "$PROJECT_DIR" || {
+    echo "ERROR: Gagal masuk ke direktori project: $PROJECT_DIR"
+    exit 1
+}
+
+# macOS tweak
+if [ "$(uname)" = "Darwin" ]; then
+    export PYTORCH_ENABLE_MPS_FALLBACK=1
+    export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
+fi
+
+# Cari Python dari venv, fallback ke python3 / python di PATH
+if [ -f "$PROJECT_DIR/.venv/bin/python" ]; then
+    PYTHON="$PROJECT_DIR/.venv/bin/python"
+    # Aktifkan venv agar env vars juga ikut ter-set
+    # shellcheck source=/dev/null
+    source "$PROJECT_DIR/.venv/bin/activate"
+    echo ">>> Menggunakan venv  : $PROJECT_DIR/.venv"
+elif command -v python3 &>/dev/null; then
+    PYTHON="python3"
+    echo ">>> venv tidak ditemukan, menggunakan python3 dari PATH"
+elif command -v python &>/dev/null; then
+    PYTHON="python"
+    echo ">>> venv tidak ditemukan, menggunakan python dari PATH"
+else
+    echo "ERROR: Python tidak ditemukan. Pasang Python 3.11+ atau buat venv terlebih dahulu."
+    exit 1
+fi
+
+echo ">>> Python binary   : $($PYTHON --version 2>&1)"
+echo ""
+
+# Jalankan infer-web.py dengan semua argumen yang diteruskan ke script ini
+exec "$PYTHON" infer-web.py --pycmd "$PYTHON"

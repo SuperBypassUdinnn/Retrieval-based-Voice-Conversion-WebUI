@@ -950,9 +950,21 @@ with gr.Blocks(title="RVC WebUI") as app:
                             vc_output2 = gr.Audio(
                                 label=i18n("输出音频(右下角三个点,点了可以下载)")
                             )
-
+                            vc_output3 = gr.File(label="Download Audio")
+                            
+                        def vc_single_with_file(*args):
+                            msg, audio_tuple = vc.vc_single(*args)
+                            if audio_tuple is not None:
+                                import soundfile as sf
+                                import tempfile
+                                sr, audio = audio_tuple
+                                fd, path = tempfile.mkstemp(suffix=".wav")
+                                os.close(fd)
+                                sf.write(path, audio, sr)
+                                return msg, audio_tuple, path
+                            return msg, None, None
                         but0.click(
-                            vc.vc_single,
+                            vc_single_with_file,
                             [
                                 spk_item,
                                 input_audio0,
@@ -968,7 +980,7 @@ with gr.Blocks(title="RVC WebUI") as app:
                                 rms_mix_rate0,
                                 protect0,
                             ],
-                            [vc_output1, vc_output2],
+                            [vc_output1, vc_output2, vc_output3],
                             api_name="infer_convert",
                         )
             with gr.TabItem(i18n("批量推理")):
